@@ -4,6 +4,7 @@
  */
 package View;
 
+import Controller.UpdateManager;
 import Model.DatabaseTools;
 import java.awt.Toolkit;
 import java.awt.event.WindowAdapter;
@@ -11,6 +12,8 @@ import java.awt.event.WindowEvent;
 import javax.swing.JOptionPane;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -18,7 +21,8 @@ import java.sql.SQLException;
  */
 public class Login extends javax.swing.JFrame {
 
-    DatabaseTools db = new DatabaseTools();
+    
+    
     /**
      * Creates new form Login
      */
@@ -26,9 +30,8 @@ public class Login extends javax.swing.JFrame {
         initComponents();
         
         this.addWindowListener(new WindowAdapter() {
-            public void windowClosing(WindowEvent e) {
-                db.close();
-            }
+//            public void windowClosing(WindowEvent e) {
+//            }
         });
     }
     
@@ -50,8 +53,8 @@ public class Login extends javax.swing.JFrame {
         jLabel2 = new javax.swing.JLabel();
         btnLogin = new javax.swing.JButton();
         tfNim = new javax.swing.JTextField();
-        tfPassword = new javax.swing.JTextField();
         jLabel3 = new javax.swing.JLabel();
+        passfield = new javax.swing.JPasswordField();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -68,9 +71,9 @@ public class Login extends javax.swing.JFrame {
 
         tfNim.setText("nim");
 
-        tfPassword.setText("password");
-
         jLabel3.setText("Password");
+
+        passfield.setText("jPasswordField1");
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -79,18 +82,18 @@ public class Login extends javax.swing.JFrame {
             .addGroup(layout.createSequentialGroup()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
-                        .addGap(171, 171, 171)
-                        .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(layout.createSequentialGroup()
                         .addGap(157, 157, 157)
                         .addComponent(btnLogin))
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(125, 125, 125)
+                        .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(layout.createSequentialGroup()
                         .addGap(48, 48, 48)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                             .addComponent(jLabel2, javax.swing.GroupLayout.DEFAULT_SIZE, 203, Short.MAX_VALUE)
                             .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 187, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(tfNim)
-                            .addComponent(tfPassword))))
+                            .addComponent(passfield))))
                 .addContainerGap(62, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
@@ -104,9 +107,9 @@ public class Login extends javax.swing.JFrame {
                 .addComponent(tfNim, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(11, 11, 11)
                 .addComponent(jLabel3)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(tfPassword, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 54, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(passfield, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 48, Short.MAX_VALUE)
                 .addComponent(btnLogin)
                 .addGap(45, 45, 45))
         );
@@ -115,24 +118,19 @@ public class Login extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnLoginActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnLoginActionPerformed
-        String username = tfNim.getText();
-        String password = tfPassword.getText();
+        int username = Integer.parseInt(tfNim.getText());
+        String password = new String(passfield.getPassword()); 
         
-        String query=String.format("select * from peminjam where nim= '%s' and password= '%s'",username,password);
-        try {
-            ResultSet rs = db.runQuery(query);
-            rs.next();
-            if (username.equals(rs.getString("nim"))) {
-                HalamanUtamaPeminjam.main(null, username);
-                JOptionPane.showMessageDialog(null, "Login Berhasil");
-//                close();
-                this.hide();
-            } else {
-                JOptionPane.showMessageDialog(null, "Username & Password Salah");
-            }
-        } catch (SQLException ex) {
-            JOptionPane.showMessageDialog(null, "Username & Password Salah");
+        UpdateManager updateManager = new UpdateManager();
+        boolean login = updateManager.login(username, password);
+        if(login){
+            updateManager.setNim(username);
+            updateManager.showHalamanUtama();
+            JOptionPane.showMessageDialog(null, "Login Berhasil");
+        }else{
+            JOptionPane.showMessageDialog(null, "Username atau Password Salah");
         }
+        this.hide();
     }//GEN-LAST:event_btnLoginActionPerformed
 
     /**
@@ -179,7 +177,7 @@ public class Login extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
+    private javax.swing.JPasswordField passfield;
     private javax.swing.JTextField tfNim;
-    private javax.swing.JTextField tfPassword;
     // End of variables declaration//GEN-END:variables
 }

@@ -4,6 +4,8 @@
  */
 package View;
 
+import Controller.UpdateManager;
+
 /**
  *
  * @author ASUS
@@ -13,10 +15,13 @@ public class HalamanUtamaPeminjam extends javax.swing.JFrame {
     /**
      * Creates new form HalamanUtama
      */
-    private String nim;
-    public HalamanUtamaPeminjam(String nim) {
-        this.nim = nim;
+    private UpdateManager updateManager;
+//    private String nim = "1";
+    public HalamanUtamaPeminjam(UpdateManager updateManager) {
+        
+        this.updateManager = updateManager;
         initComponents();
+        
     }
 
     /**
@@ -56,9 +61,9 @@ public class HalamanUtamaPeminjam extends javax.swing.JFrame {
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addGap(27, 27, 27)
+                .addContainerGap()
                 .addComponent(jLabel1)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 180, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 99, Short.MAX_VALUE)
                 .addComponent(btnStatusPeminjaman)
                 .addGap(52, 52, 52))
         );
@@ -67,7 +72,7 @@ public class HalamanUtamaPeminjam extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnStatusPeminjamanActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnStatusPeminjamanActionPerformed
-        HalamanStatusPengajuan.main(null, nim);
+        HalamanStatusPengajuan.main(null, this.updateManager);
         this.hide();
     }//GEN-LAST:event_btnStatusPeminjamanActionPerformed
 
@@ -75,7 +80,7 @@ public class HalamanUtamaPeminjam extends javax.swing.JFrame {
     /**
      * @param args the command line arguments
      */
-    public static void main(String args[], String nim) {
+    public static void main(String args[], UpdateManager updateManager) {
         /* Set the Nimbus look and feel */
         //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
         /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
@@ -103,7 +108,7 @@ public class HalamanUtamaPeminjam extends javax.swing.JFrame {
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
-                new HalamanUtamaPeminjam(nim).setVisible(true);
+                new HalamanUtamaPeminjam(updateManager).setVisible(true);
             }
         });
     }

@@ -4,11 +4,15 @@
  */
 package View;
 
+import Controller.UpdateManager;
 import Model.DatabaseTools;
+import Model.Pengajuan;
+import Model.Ruang;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JOptionPane;
@@ -26,22 +30,16 @@ public class HalamanStatusPengajuan extends javax.swing.JFrame {
     /**
      * Creates new form HalamanUpdatePengajuan
      */
-    DatabaseTools db = new DatabaseTools();
     
-    private String nim;
+//    private String nim;
+    private UpdateManager updateManager;
     private int selectedRuang;
     private int selectedPengajuan;
-    public HalamanStatusPengajuan(String nim) {
-        this.nim = nim;
+    public HalamanStatusPengajuan(UpdateManager updateManager) {
+        this.updateManager = updateManager;
         initComponents();
         
         populateTabelStatus();
-        
-        this.addWindowListener(new WindowAdapter() {
-            public void windowClosing(WindowEvent e) {
-                db.close();
-            }
-        });
         
         ListSelectionModel modelTabelProduk = tableDaftarStatusPengajuan.getSelectionModel();
         modelTabelProduk.addListSelectionListener(new ListSelectionListener() {
@@ -49,60 +47,49 @@ public class HalamanStatusPengajuan extends javax.swing.JFrame {
             public void valueChanged(ListSelectionEvent lse) {
                 if (!modelTabelProduk.isSelectionEmpty()) {
                     int index = modelTabelProduk.getMinSelectionIndex();
-//                    String status = intStatus(tableDaftarStatusPengajuan.getModel().getValueAt(index, 1).toString());
-//                    String tgl = tableDaftarStatusPengajuan.getModel().getValueAt(index, 2).toString();
-//                    String idPengajuan = getString(db.runQuery("select idPengajuan from pengajuan where status = %s and tanggalWaktuPengajuan= '%s'",status, tgl));
                     selectedPengajuan = Integer.parseInt(tableDaftarStatusPengajuan.getModel().getValueAt(index, 1).toString());
-                    String query=String.format("select * from pengajuan join peminjam on pengajuan.nimPeminjam = peminjam.nim join ruang on pengajuan.ruang = ruang.idRuang where idPengajuan = %s",selectedPengajuan);
-                    try {
-                        ResultSet rs=db.runQuery(query);
-                        rs.next();
-                        selectedRuang=rs.getInt("idRuang");
-                        tfNamaLembaga.setText(rs.getString("namaLembaga"));
-                        tfNamaRuang.setText(rs.getString("namaRuang"));
-                        tfKapasitas.setText(rs.getString("kapasitas"));
-                        tfFasilitas.setText(rs.getString("fasilitas"));
-                    } catch (SQLException ex) {
-                        Logger.getLogger(HalamanStatusPengajuan.class.getName()).log(Level.SEVERE, null, ex);
+                    
+                    String query=String.format("select * from pengajuan join peminjam on pengajuan.nim = peminjam.nim join ruang on pengajuan.idRuang = ruang.idRuang where idPengajuan = %s",selectedPengajuan);
+                    
+                    ArrayList<Ruang> arr = updateManager.populateTextFieldPengajuan(query);
+                    int n = 0;
+                    for(int i=0;i<updateManager.getDaftarPengajuan().size();i++){
+                        if(updateManager.getDaftarPengajuan().get(i).getIdPengajuan()==selectedPengajuan){
+                            n=i;
+                            break;
+                        }
+                    }
+                    if(arr!=null){
+                        selectedRuang=arr.get(0).getIdRuang();
+                        tfNamaLembaga.setText(updateManager.getDaftarPengajuan().get(n).getNamaLembaga());
+                        tfNamaRuang.setText(arr.get(0).getNamaRuang());
+                        tfKapasitas.setText(Integer.toString(arr.get(0).getKapasitas()));
+                        tfFasilitas.setText(arr.get(0).getFasilitas());
                     }
                 }
             }
         });
     }
-
-    private String stringStatus(String status){
-        if(status.equals("0")){
-            return "Sedang diproses";
-        }else{
-            return "Sudah diproses";
-        }
-    }
-    
-    private String intStatus(String status){
-            if(status.equals("Sedang diproses")){
-            return "0";
-        }else{
-            return "1";
-        }
-    }
     
     private void populateTabelStatus(){
-        try {
-            String query = String.format("select * from pengajuan where nimPeminjam = '%s'",this.nim);
-            ResultSet rs = db.runQuery(query);
+        String query = String.format("select * from pengajuan where nim = '%s'",this.updateManager.getNim());
+        ArrayList<Pengajuan> arr = updateManager.populateTabelStatus(query);
+        if(arr!=null){
             DefaultTableModel tableModel = (DefaultTableModel)tableDaftarStatusPengajuan.getModel();
             tableModel.setRowCount(0);
+            System.out.println(arr.size());
             int i=0;
-            while (rs.next()) {
+            for(Pengajuan p : arr){
                 tableModel.addRow(new Object[] {
                     ++i,
-                    rs.getString("idPengajuan"),
-                    stringStatus(rs.getString("status")),
-                    rs.getString("tanggalWaktuPengajuan")
+                    p.getIdPengajuan(),
+                    p.getStatus(),
+                    p.getTanggalWaktuPengajuan(),
+                    p.getWaktuAwalPeminjaman(),
+                    p.getWaktuAkhirPeminjaman()
                 });
             }
-
-        } catch (Exception e) {
+        }else{
             JOptionPane.showMessageDialog(null, "Ada error saat mengisi daftar status pengajuan");
         }
     }
@@ -133,17 +120,17 @@ public class HalamanStatusPengajuan extends javax.swing.JFrame {
 
         tableDaftarStatusPengajuan.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null}
+                {null, null, null, null, null, null},
+                {null, null, null, null, null, null},
+                {null, null, null, null, null, null},
+                {null, null, null, null, null, null}
             },
             new String [] {
-                "Nomor", "Id", "Status Pengajuan", "Tanggal"
+                "Nomor", "Id", "Status Pengajuan", "Tanggal", "Waktu Mulai", "Waktu Selesai"
             }
         ) {
             Class[] types = new Class [] {
-                java.lang.Integer.class, java.lang.Object.class, java.lang.String.class, java.lang.Object.class
+                java.lang.Integer.class, java.lang.Object.class, java.lang.String.class, java.lang.Object.class, java.lang.Integer.class, java.lang.Integer.class
             };
 
             public Class getColumnClass(int columnIndex) {
@@ -200,28 +187,28 @@ public class HalamanStatusPengajuan extends javax.swing.JFrame {
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addComponent(jScrollPane1)
                     .addGroup(layout.createSequentialGroup()
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(jLabel1, javax.swing.GroupLayout.DEFAULT_SIZE, 95, Short.MAX_VALUE)
-                            .addComponent(jLabel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(jLabel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(jLabel4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addContainerGap()
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(tfNamaLembaga)
-                            .addComponent(tfNamaRuang)
-                            .addComponent(tfKapasitas)
-                            .addComponent(tfFasilitas)))
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                        .addGap(0, 1, Short.MAX_VALUE)
-                        .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 375, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                        .addComponent(btnUpdate)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(btnBack)))
+                            .addGroup(layout.createSequentialGroup()
+                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                    .addComponent(jLabel1, javax.swing.GroupLayout.DEFAULT_SIZE, 95, Short.MAX_VALUE)
+                                    .addComponent(jLabel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addComponent(jLabel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addComponent(jLabel4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(tfNamaLembaga)
+                                    .addComponent(tfNamaRuang)
+                                    .addComponent(tfKapasitas)
+                                    .addComponent(tfFasilitas)))
+                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                                .addComponent(btnUpdate)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 493, Short.MAX_VALUE)
+                                .addComponent(btnBack)))))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
@@ -253,7 +240,7 @@ public class HalamanStatusPengajuan extends javax.swing.JFrame {
                             .addGroup(layout.createSequentialGroup()
                                 .addGap(18, 18, 18)
                                 .addComponent(btnUpdate)
-                                .addContainerGap(16, Short.MAX_VALUE))))
+                                .addContainerGap(26, Short.MAX_VALUE))))
                     .addGroup(layout.createSequentialGroup()
                         .addComponent(tfFasilitas, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(0, 0, Short.MAX_VALUE))))
@@ -263,7 +250,7 @@ public class HalamanStatusPengajuan extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnBackActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnBackActionPerformed
-        HalamanUtamaPeminjam.main(null, nim);
+        updateManager.showHalamanUtama();;
         this.hide();
     }//GEN-LAST:event_btnBackActionPerformed
 
@@ -276,15 +263,29 @@ public class HalamanStatusPengajuan extends javax.swing.JFrame {
     }//GEN-LAST:event_tfNamaRuangActionPerformed
 
     private void btnUpdateActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnUpdateActionPerformed
-        HalamanUpdatePengajuan.main(null, nim, selectedRuang,selectedPengajuan);
-        this.hide();
+        
+        String query = String.format("select (tanggalWaktuPeminjaman-CURRENT_DATE) as selisih, status from pengajuan where idPengajuan = %s",this.selectedPengajuan);
+        try{
+            ArrayList<String> arr = updateManager.getSelisihDanStatus(query);
+            if(arr.get(1).equals("Sudah disetujui")){
+                JOptionPane.showMessageDialog(null, "Pengajuan sudah disetujui");
+            }else if(Integer.parseInt(arr.get(0))<1){
+                JOptionPane.showMessageDialog(null, "Pengajuan tidak dapat dimodifikasi kurang dari 5 hari sebelum pelaksanaan");
+            }else{
+                updateManager.showHalamanUpdatePengajuan(selectedRuang,selectedPengajuan);
+                this.hide();
+            }
+        }catch(Exception e){
+            Logger.getLogger(HalamanStatusPengajuan.class.getName()).log(Level.SEVERE, null, e);
+            JOptionPane.showMessageDialog(null, "Ada error saat melakukan update");
+        }
     }//GEN-LAST:event_btnUpdateActionPerformed
 
     
     /**
      * @param args the command line arguments
      */
-    public static void main(String args[], String nim) {
+    public static void main(String args[], UpdateManager updateManager) {
         /* Set the Nimbus look and feel */
         //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
         /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
@@ -312,7 +313,7 @@ public class HalamanStatusPengajuan extends javax.swing.JFrame {
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
-                new HalamanStatusPengajuan(nim).setVisible(true);
+                new HalamanStatusPengajuan(updateManager).setVisible(true);
             }
         });
     }
